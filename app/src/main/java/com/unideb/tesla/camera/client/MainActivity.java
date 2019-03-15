@@ -21,7 +21,7 @@ import android.view.View;
 public class MainActivity extends AppCompatActivity {
 
     public static final int STORAGE_REQUEST_CODE = 12345;
-    public static final int CAMREA_REQUEST_CODE = 12346;
+    public static final int CAMERA_REQUEST_CODE = 12346;
 
     private WifiManager.MulticastLock multicastLock;
 
@@ -215,7 +215,7 @@ public class MainActivity extends AppCompatActivity {
 
             if(checkSelfPermission(Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED){
 
-                requestPermissions(new String[]{Manifest.permission.CAMERA}, CAMREA_REQUEST_CODE);
+                requestPermissions(new String[]{Manifest.permission.CAMERA}, CAMERA_REQUEST_CODE);
 
             }
 
