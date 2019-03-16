@@ -17,11 +17,12 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
+import android.widget.Button;
+import android.widget.Toast;
 
 public class MainActivity extends AppCompatActivity {
 
-    public static final int STORAGE_REQUEST_CODE = 12345;
-    public static final int CAMERA_REQUEST_CODE = 12346;
+    public static final String TESLA_CAMERA_CLIENT_MULTICAST_LOCK = "tesla_camera_client_multicast_lock";
 
     private WifiManager.MulticastLock multicastLock;
 
@@ -35,15 +36,19 @@ public class MainActivity extends AppCompatActivity {
     private boolean isUnbound = false;
 
     // AFTER REFACTOR:
+    private Button serviceButton;
+
     private PermissionHandler permissionHandler;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
 
-        initMulticastLock();
-
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        serviceButton = findViewById(R.id.serviceButton);
+
+        refreshUi();
 
         initialize();
 
@@ -61,6 +66,42 @@ public class MainActivity extends AppCompatActivity {
                 Manifest.permission.CAMERA
         }, this);
         permissionHandler.askForPermissions();
+
+    }
+
+    private void refreshUi(){
+
+        // service button
+        if(!serviceRunning){
+            serviceButton.setText(R.string.start_button_text);
+        }else{
+            serviceButton.setText(R.string.stop_button_text);
+        }
+
+    }
+
+    public void serviceButtonHandler(View view){
+
+        // TODO: check requirements
+
+        // check permissions
+        if(!permissionHandler.allPermissionsGranted()){
+
+            permissionHandler.askForPermissions();
+
+            Toast.makeText(this, "Please allow the required permissions!", Toast.LENGTH_LONG).show();
+
+            return;
+
+        }
+
+        // multicast lock
+        initMulticastLock();
+
+        // TODO: start it?
+
+        // refresh ui
+        refreshUi();
 
     }
 
@@ -111,6 +152,8 @@ public class MainActivity extends AppCompatActivity {
 
         super.onStart();
 
+        refreshUi();
+
         Log.d("ONSTART", "WE ARE STARTING!");
 
         // bindService(new Intent(this, MyService.class), serviceConnection, Context.BIND_AUTO_CREATE);
@@ -131,7 +174,7 @@ public class MainActivity extends AppCompatActivity {
         }
         */
 
-        finishService();
+        // finishService();
 
     }
 
@@ -199,7 +242,7 @@ public class MainActivity extends AppCompatActivity {
     private void initMulticastLock(){
 
         WifiManager wifiManager = (WifiManager) getApplicationContext().getSystemService(Context.WIFI_SERVICE);
-        multicastLock = wifiManager.createMulticastLock("mylock");
+        multicastLock = wifiManager.createMulticastLock(TESLA_CAMERA_CLIENT_MULTICAST_LOCK);
         multicastLock.acquire();
 
     }
