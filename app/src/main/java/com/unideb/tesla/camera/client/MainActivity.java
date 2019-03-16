@@ -72,7 +72,7 @@ public class MainActivity extends AppCompatActivity {
 
         initialize();
 
-        initService();
+        // initService();
 
     }
 
@@ -130,10 +130,16 @@ public class MainActivity extends AppCompatActivity {
 
         }
 
+        // TODO: is device registered?
+
         // multicast lock
         initMulticastLock();
 
-        // TODO: start it?
+        // init service
+        initService();
+
+        // TODO: start service
+        startService(serviceIntent);
 
         // refresh ui
         refreshUi();
@@ -142,8 +148,8 @@ public class MainActivity extends AppCompatActivity {
 
     private void initService(){
 
-        serviceIntent = new Intent(this, MyService.class);
-        bindService(serviceIntent, serviceConnection, Context.BIND_AUTO_CREATE);
+        serviceIntent = new Intent(this, TeslaService.class);
+        // bindService(serviceIntent, serviceConnection, Context.BIND_AUTO_CREATE);
 
     }
 
