@@ -129,6 +129,7 @@ public class TeslaService extends IntentService {
         buffer = new ArrayList<>();
 
         // init camera
+        /*
         cameraHandler = new CameraHandler(this, new ImageReader.OnImageAvailableListener() {
             @Override
             public void onImageAvailable(ImageReader reader) {
@@ -141,6 +142,8 @@ public class TeslaService extends IntentService {
 
             }
         });
+        */
+        cameraHandler = new CameraHandler(this, new ClientOnImageAvailableListener());
         cameraHandler.init();
 
     }
