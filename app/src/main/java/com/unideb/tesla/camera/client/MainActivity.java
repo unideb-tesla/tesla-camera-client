@@ -39,6 +39,7 @@ public class MainActivity extends AppCompatActivity {
     private Button serviceButton;
 
     private PermissionHandler permissionHandler;
+    private ClientSharedPreferences clientSharedPreferences;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -67,6 +68,9 @@ public class MainActivity extends AppCompatActivity {
         }, this);
         permissionHandler.askForPermissions();
 
+        // initialize shared preferences handler
+        clientSharedPreferences = new ClientSharedPreferences(this);
+
     }
 
     private void refreshUi(){
@@ -90,6 +94,15 @@ public class MainActivity extends AppCompatActivity {
             permissionHandler.askForPermissions();
 
             Toast.makeText(this, "Please allow the required permissions!", Toast.LENGTH_LONG).show();
+
+            return;
+
+        }
+
+        // check if time synchronization has been made
+        if(!clientSharedPreferences.isTimeSynchronizationDelayKeyExists()){
+
+            Toast.makeText(this, "Please perform time synchronization with the corresponding application!", Toast.LENGTH_LONG).show();
 
             return;
 
