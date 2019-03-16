@@ -1,14 +1,13 @@
 package com.unideb.tesla.camera.client;
 
 import android.Manifest;
+import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.ServiceConnection;
-import android.content.pm.PackageManager;
-import android.net.wifi.WifiInfo;
 import android.net.wifi.WifiManager;
-import android.os.Build;
 import android.os.IBinder;
 import android.os.Message;
 import android.os.Messenger;
@@ -23,6 +22,7 @@ import android.widget.Toast;
 public class MainActivity extends AppCompatActivity {
 
     public static final String TESLA_CAMERA_CLIENT_MULTICAST_LOCK = "tesla_camera_client_multicast_lock";
+    public static final String TIME_SYNCHRONIZATION_DELAY_INTENT_FILTER = "com.unideb.tesla.timesync.TIME_SYNCHRONIZATION_DELAY";
 
     private WifiManager.MulticastLock multicastLock;
 
@@ -40,6 +40,25 @@ public class MainActivity extends AppCompatActivity {
 
     private PermissionHandler permissionHandler;
     private ClientSharedPreferences clientSharedPreferences;
+
+    private BroadcastReceiver broadcastReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+
+            if(intent.getAction().equals(TIME_SYNCHRONIZATION_DELAY_INTENT_FILTER)){
+
+                long delay = intent.getLongExtra("time_synchronization_delay", 0);
+
+                clientSharedPreferences.saveTimeSynchronizationDelay(delay);
+
+                if(serviceRunning){
+                    // TODO: send message to service
+                }
+
+            }
+
+        }
+    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -70,6 +89,9 @@ public class MainActivity extends AppCompatActivity {
 
         // initialize shared preferences handler
         clientSharedPreferences = new ClientSharedPreferences(this);
+
+        // initialize broadcast receiver
+        registerReceiver(broadcastReceiver, new IntentFilter(TIME_SYNCHRONIZATION_DELAY_INTENT_FILTER));
 
     }
 
@@ -140,6 +162,8 @@ public class MainActivity extends AppCompatActivity {
         super.onDestroy();
 
         releaseMulticastLock();
+
+        unregisterReceiver(broadcastReceiver);
 
     }
 
