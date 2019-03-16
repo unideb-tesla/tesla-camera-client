@@ -51,15 +51,69 @@ public class TeslaService extends IntentService {
     @Override
     protected void onHandleIntent(@Nullable Intent intent) {
 
-        Log.d("HANDLE", "ESKETIIIIIIIIIIIIIIIT");
+        // get the delay from the intent
+        timeDifference = intent.getLongExtra("time_synchronization_delay", 0);
 
-        // TODO: get the delay from the intent
+        // initialize
+        initialize();
 
-        // TODO: init everything
-        isRunning = true;
+        // receive and handle messages
+        while (isRunning) {
+            try {
+                run();
+            } catch (IOException e) {
+                if (!(e instanceof SocketTimeoutException)) {
+                    e.printStackTrace();
+                }
+            }
+        }
 
+    }
+
+    @Override
+    public void onDestroy() {
+
+        super.onDestroy();
+
+        // close everything
+
+        // stop running
+        isRunning = false;
+
+        // close udp socket communication
         try {
 
+            // TODO: read them from settings
+            multicastSocket.leaveGroup(InetAddress.getByName("230.1.2.3"));
+            multicastSocket.close();
+            multicastSocket = null;
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        udpBuffer = null;
+        datagramPacket = null;
+
+        // reset TESLA buffer
+        buffer.clear();
+        buffer = null;
+
+        // close camera
+        cameraHandler.close();
+        cameraHandler = null;
+
+    }
+
+    private void initialize(){
+
+        // service is running
+        isRunning = true;
+
+        // init udp socket communication
+        try {
+
+            // TODO: read them from settings
             multicastSocket = new MulticastSocket(9999);
             multicastSocket.joinGroup(InetAddress.getByName("230.1.2.3"));
             multicastSocket.setSoTimeout(1000);
@@ -69,12 +123,9 @@ public class TeslaService extends IntentService {
         }
 
         udpBuffer = new byte[1024];
-
         datagramPacket = new DatagramPacket(udpBuffer, udpBuffer.length);
 
-        // TODO: NO!!!
-        timeDifference = 100;
-
+        // init TESLA buffer
         buffer = new ArrayList<>();
 
         // init camera
@@ -85,23 +136,12 @@ public class TeslaService extends IntentService {
                 Image image = reader.acquireLatestImage();
 
                 // TODO: mess around with image
-                Log.d("IMAGE", "ITS FUCKING WORKING!!!");
 
                 image.close();
 
             }
         });
         cameraHandler.init();
-
-        while (isRunning) {
-            try {
-                run();
-            } catch (IOException e) {
-                if (!(e instanceof SocketTimeoutException)) {
-                    e.printStackTrace();
-                }
-            }
-        }
 
     }
 
@@ -129,9 +169,6 @@ public class TeslaService extends IntentService {
     }
 
     private byte[] receiveBytes() throws IOException {
-
-        // create datagram packet for receiving data
-        // DatagramPacket datagramPacket = new DatagramPacket(udpBuffer, udpBuffer.length);
 
         // receive packet
         multicastSocket.receive(datagramPacket);
@@ -241,15 +278,8 @@ public class TeslaService extends IntentService {
 
     private void handleValidTriplets(List<Triplet> triplets) {
 
-        for (Triplet triplet : triplets) {
-
-            Log.d("VALID TRIPLET", triplet.getTeslaMessage().getMessage());
-
-        }
-
+        // TODO: stuff
         cameraHandler.captureImage();
-
-        // TODO: captureImage();
 
     }
 

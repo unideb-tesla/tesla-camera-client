@@ -108,38 +108,46 @@ public class MainActivity extends AppCompatActivity {
 
     public void serviceButtonHandler(View view){
 
-        // TODO: check requirements
+        if(!serviceRunning) {
 
-        // check permissions
-        if(!permissionHandler.allPermissionsGranted()){
+            // check permissions
+            if (!permissionHandler.allPermissionsGranted()) {
 
-            permissionHandler.askForPermissions();
+                permissionHandler.askForPermissions();
 
-            Toast.makeText(this, "Please allow the required permissions!", Toast.LENGTH_LONG).show();
+                Toast.makeText(this, "Please allow the required permissions!", Toast.LENGTH_LONG).show();
 
-            return;
+                return;
+
+            }
+
+            // check if time synchronization has been made
+            if (!clientSharedPreferences.isTimeSynchronizationDelayKeyExists()) {
+
+                Toast.makeText(this, "Please perform time synchronization with the corresponding application!", Toast.LENGTH_LONG).show();
+
+                return;
+
+            }
+
+            // TODO: is device registered?
+
+            // multicast lock
+            initMulticastLock();
+
+            // init service
+            initService();
+
+            // start service
+            startService(serviceIntent);
+            serviceRunning = true;
+
+        }else{
+
+            stopService(serviceIntent);
+            serviceRunning = false;
 
         }
-
-        // check if time synchronization has been made
-        if(!clientSharedPreferences.isTimeSynchronizationDelayKeyExists()){
-
-            Toast.makeText(this, "Please perform time synchronization with the corresponding application!", Toast.LENGTH_LONG).show();
-
-            return;
-
-        }
-
-        // TODO: is device registered?
-
-        // multicast lock
-        initMulticastLock();
-
-        // init service
-        initService();
-
-        // TODO: start service
-        startService(serviceIntent);
 
         // refresh ui
         refreshUi();
@@ -155,8 +163,8 @@ public class MainActivity extends AppCompatActivity {
 
     private void finishService(){
 
-        unbindService(serviceConnection);
-        isUnbound = true;
+        // unbindService(serviceConnection);
+        // isUnbound = true;
         stopService(serviceIntent);
         // serviceIntent = null;
 
