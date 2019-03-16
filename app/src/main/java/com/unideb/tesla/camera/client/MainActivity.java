@@ -34,6 +34,9 @@ public class MainActivity extends AppCompatActivity {
     private int delay = 0;
     private boolean isUnbound = false;
 
+    // AFTER REFACTOR:
+    private PermissionHandler permissionHandler;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
 
@@ -42,9 +45,22 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        askForPermissions();
+        initialize();
 
         initService();
+
+    }
+
+    private void initialize(){
+
+        // initialize permission handler
+        permissionHandler = new PermissionHandler(new String[]{
+                Manifest.permission.INTERNET,
+                Manifest.permission.WRITE_EXTERNAL_STORAGE,
+                Manifest.permission.CHANGE_WIFI_MULTICAST_STATE,
+                Manifest.permission.CAMERA
+        }, this);
+        permissionHandler.askForPermissions();
 
     }
 
@@ -194,30 +210,6 @@ public class MainActivity extends AppCompatActivity {
 
             multicastLock.release();
             multicastLock = null;
-
-        }
-
-    }
-
-    private void askForPermissions(){
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-
-            if(checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED){
-
-                requestPermissions(new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, STORAGE_REQUEST_CODE);
-
-            }
-
-        }
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-
-            if(checkSelfPermission(Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED){
-
-                requestPermissions(new String[]{Manifest.permission.CAMERA}, CAMERA_REQUEST_CODE);
-
-            }
 
         }
 
