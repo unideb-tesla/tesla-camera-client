@@ -23,6 +23,10 @@ public class MainActivity extends AppCompatActivity {
     public static final String TESLA_CAMERA_CLIENT_MULTICAST_LOCK = "tesla_camera_client_multicast_lock";
     public static final String TIME_SYNCHRONIZATION_DELAY_INTENT_FILTER = "com.unideb.tesla.timesync.TIME_SYNCHRONIZATION_DELAY";
 
+    public static final String DEFAULT_MULTICAST_ADDRESS = "230.1.2.3";
+    public static final int DEFAULT_MULTICAST_PORT = 9999;
+    public static final String DEFAULT_WEBAPP_ADDRESS = "http://192.168.0.109:8080/";
+
     private WifiManager.MulticastLock multicastLock;
 
     private boolean serviceRunning = false;
@@ -160,6 +164,9 @@ public class MainActivity extends AppCompatActivity {
 
         serviceIntent = new Intent(this, TeslaService.class);
         serviceIntent.putExtra("time_synchronization_delay", clientSharedPreferences.getTimeSynchronizationDelay());
+        serviceIntent.putExtra("multicast_address", DEFAULT_MULTICAST_ADDRESS);
+        serviceIntent.putExtra("multicast_port", DEFAULT_MULTICAST_PORT);
+        serviceIntent.putExtra("webapp_address", DEFAULT_WEBAPP_ADDRESS);
         bindService(serviceIntent, serviceConnection, Context.BIND_AUTO_CREATE);
 
     }

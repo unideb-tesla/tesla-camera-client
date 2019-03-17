@@ -3,8 +3,7 @@ package com.unideb.tesla.camera.client;
 import android.app.IntentService;
 import android.content.Context;
 import android.content.Intent;
-import android.media.Image;
-import android.media.ImageReader;
+import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
@@ -12,6 +11,8 @@ import android.os.Messenger;
 import android.support.annotation.Nullable;
 import android.util.Log;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.unideb.tesla.camera.dto.DisclosureSchedule;
 import com.unideb.tesla.camera.dto.Packet;
 
@@ -26,6 +27,13 @@ import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.List;
+
+import okhttp3.ResponseBody;
+import retrofit2.Call;
+import retrofit2.Response;
+import retrofit2.Retrofit;
+import retrofit2.converter.gson.GsonConverterFactory;
+import retrofit2.converter.scalars.ScalarsConverterFactory;
 
 public class TeslaService extends IntentService {
 
@@ -45,11 +53,22 @@ public class TeslaService extends IntentService {
 
     // UDP related fields
     private MulticastSocket multicastSocket;
+    private String address;
+    private int port;
     private byte[] udpBuffer;
     private DatagramPacket datagramPacket;
 
     // camera
     private CameraHandler cameraHandler;
+
+    // device information
+    private DeviceInformation deviceInformation;
+
+    // webapp related fields
+    private String webappAddress;
+    private Retrofit retrofit;
+    private DeviceService deviceService;
+    private ImageService imageService;
 
     public TeslaService() {
         super("TeslaService");
@@ -60,6 +79,9 @@ public class TeslaService extends IntentService {
 
         // get the delay from the intent
         timeDifference = intent.getLongExtra("time_synchronization_delay", 0);
+        address = intent.getStringExtra("multicast_address");
+        port = intent.getIntExtra("multicast_port", 9999);
+        webappAddress = intent.getStringExtra("webapp_address");
 
         // initialize
         initialize();
@@ -91,7 +113,7 @@ public class TeslaService extends IntentService {
         try {
 
             // TODO: read them from settings
-            multicastSocket.leaveGroup(InetAddress.getByName("230.1.2.3"));
+            multicastSocket.leaveGroup(InetAddress.getByName(address));
             multicastSocket.close();
             multicastSocket = null;
 
@@ -141,19 +163,32 @@ public class TeslaService extends IntentService {
 
     private void initialize(){
 
-        // service is running
-        isRunning = true;
+        // collect device information
+        deviceInformation = collectDeviceInformation();
+
+        // init retrofit
+        initializeRetrofit();
+
+        // check if device registered in db
+        try {
+            deviceSetup();
+        } catch (IOException e) {
+            e.printStackTrace();
+            return;
+        }
+
+        // TODO: set up GPS stuff
 
         // init udp socket communication
         try {
 
-            // TODO: read them from settings
-            multicastSocket = new MulticastSocket(9999);
-            multicastSocket.joinGroup(InetAddress.getByName("230.1.2.3"));
+            multicastSocket = new MulticastSocket(port);
+            multicastSocket.joinGroup(InetAddress.getByName(address));
             multicastSocket.setSoTimeout(1000);
 
         } catch (IOException e) {
             e.printStackTrace();
+            return;
         }
 
         udpBuffer = new byte[1024];
@@ -163,8 +198,62 @@ public class TeslaService extends IntentService {
         buffer = new ArrayList<>();
 
         // init camera
-        cameraHandler = new CameraHandler(this, new ClientOnImageAvailableListener());
+        cameraHandler = new CameraHandler(this, new ClientOnImageAvailableListener(imageService, deviceInformation.getMac()));
         cameraHandler.init();
+
+        // service is running
+        isRunning = true;
+
+    }
+
+    private void initializeRetrofit(){
+
+        // gson for parsing data
+        Gson gson = new GsonBuilder()
+                .setLenient()
+                .create();
+
+        // create retrofit object
+        retrofit = new Retrofit.Builder()
+                .addConverterFactory(ScalarsConverterFactory.create())
+                .addConverterFactory(GsonConverterFactory.create(gson))
+                .baseUrl(webappAddress)
+                .build();
+
+        // create services
+        deviceService = retrofit.create(DeviceService.class);
+        imageService = retrofit.create(ImageService.class);
+
+    }
+
+    private DeviceInformation collectDeviceInformation(){
+
+        String mac = NetworkUtils.getMacAddress();
+        String brand = Build.BRAND;
+        String device = Build.DEVICE;
+        String model = Build.MODEL;
+        String sdk = Integer.toString(Build.VERSION.SDK_INT);
+
+        return new DeviceInformation(mac, brand, device, model, sdk);
+
+    }
+
+    private void deviceSetup() throws IOException {
+
+        Call<DeviceRequest> deviceCheckCall = deviceService.get(deviceInformation.getMac());
+        DeviceRequest deviceCheckResult = deviceCheckCall.execute().body();
+
+        if(deviceCheckResult == null){
+
+            // device doesn't exist in db, lets create it
+            DeviceRequest deviceRequest = new DeviceRequest(deviceInformation.getMac(), deviceInformation.getBrand(), deviceInformation.getDevice(), deviceInformation.getModel(), deviceInformation.getSdk(), "", 0);
+
+            Call<DeviceRequest> devicePutCall = deviceService.put(deviceRequest);
+            devicePutCall.execute();
+
+        }else{
+            // TODO: should we update it?
+        }
 
     }
 

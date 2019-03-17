@@ -2,15 +2,10 @@ package com.unideb.tesla.camera.client;
 
 import android.media.Image;
 import android.media.ImageReader;
-import android.net.Uri;
 import android.os.Environment;
 import android.util.Log;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -23,11 +18,18 @@ import okhttp3.ResponseBody;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
-import retrofit2.Retrofit;
-import retrofit2.converter.gson.GsonConverterFactory;
-import retrofit2.converter.scalars.ScalarsConverterFactory;
 
 public class ClientOnImageAvailableListener implements ImageReader.OnImageAvailableListener {
+
+    public static final String MEDIA_TYPE_IMAGE_JPEG = "image/jpeg";
+
+    private ImageService imageService;
+    private String mac;
+
+    public ClientOnImageAvailableListener(ImageService imageService, String mac) {
+        this.imageService = imageService;
+        this.mac = mac;
+    }
 
     @Override
     public void onImageAvailable(ImageReader reader) {
@@ -48,11 +50,8 @@ public class ClientOnImageAvailableListener implements ImageReader.OnImageAvaila
         // close image
         image.close();
 
-        // POST image to the endpoint
-        postImage(temporaryImage);
-
-        // TODO: delete temporary image
-        // temporaryImage.delete();
+        // POST image to the endpoint then delete
+        putImage(temporaryImage);
 
     }
 
@@ -80,37 +79,28 @@ public class ClientOnImageAvailableListener implements ImageReader.OnImageAvaila
 
     }
 
-    // TODO: rename to PUT
-    private void postImage(File image){
+    private void putImage(final File image){
 
-        Uri fileUri = Uri.fromFile(image);
-        RequestBody requestFile = RequestBody.create(MediaType.parse("image/jpeg"), image);
+        // Uri fileUri = Uri.fromFile(image);
+        RequestBody requestFile = RequestBody.create(MediaType.parse(MEDIA_TYPE_IMAGE_JPEG), image);
 
         MultipartBody.Part body = MultipartBody.Part.createFormData("image", image.getName(), requestFile);
 
-        Gson gson = new GsonBuilder()
-                .setLenient()
-                .create();
-
-        Retrofit retrofit = new Retrofit.Builder()
-                .addConverterFactory(ScalarsConverterFactory.create())
-                .addConverterFactory(GsonConverterFactory.create(gson))
-                .baseUrl("http://192.168.0.109:8080/")
-                .build();
-
-        ImageService imageService = retrofit.create(ImageService.class);
-        Call<ResponseBody> call = imageService.upload(body, 100, 50, 50, "kekmac");
+        // TODO: replace mock data with correct data
+        Call<ResponseBody> call = imageService.upload(body, 100, 50, 50, mac);
 
         call.enqueue(new Callback<ResponseBody>() {
             @Override
             public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
                 Log.d("POST", "SUCCESS!!!");
+                image.delete();
             }
 
             @Override
             public void onFailure(Call<ResponseBody> call, Throwable t) {
                 Log.d("POST", "FAILED!!!");
                 t.printStackTrace();
+                image.delete();
             }
         });
 
