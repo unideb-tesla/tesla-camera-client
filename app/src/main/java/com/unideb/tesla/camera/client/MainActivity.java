@@ -14,7 +14,6 @@ import android.os.Messenger;
 import android.os.RemoteException;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.Toast;
@@ -29,11 +28,8 @@ public class MainActivity extends AppCompatActivity {
     private boolean serviceRunning = false;
     private Intent serviceIntent;
 
-    // binderino
+    // messenger for communicating with the service
     private Messenger messenger;
-    private boolean isBound;
-    private int delay = 0;
-    private boolean isUnbound = false;
 
     // AFTER REFACTOR:
     private Button serviceButton;
@@ -52,7 +48,15 @@ public class MainActivity extends AppCompatActivity {
                 clientSharedPreferences.saveTimeSynchronizationDelay(delay);
 
                 if(serviceRunning){
-                    // TODO: send message to service
+
+                    // send message to service
+                    Message message = Message.obtain(null, TeslaService.TIME_SYNCHRONIZATION_DELAY_UPDATE, (int) delay, 0);
+                    try {
+                        messenger.send(message);
+                    } catch (RemoteException e) {
+                        e.printStackTrace();
+                    }
+
                 }
 
             }
@@ -71,8 +75,6 @@ public class MainActivity extends AppCompatActivity {
         refreshUi();
 
         initialize();
-
-        // initService();
 
     }
 
@@ -144,7 +146,7 @@ public class MainActivity extends AppCompatActivity {
 
         }else{
 
-            stopService(serviceIntent);
+            finishService();
             serviceRunning = false;
 
         }
@@ -157,16 +159,15 @@ public class MainActivity extends AppCompatActivity {
     private void initService(){
 
         serviceIntent = new Intent(this, TeslaService.class);
-        // bindService(serviceIntent, serviceConnection, Context.BIND_AUTO_CREATE);
+        serviceIntent.putExtra("time_synchronization_delay", clientSharedPreferences.getTimeSynchronizationDelay());
+        bindService(serviceIntent, serviceConnection, Context.BIND_AUTO_CREATE);
 
     }
 
     private void finishService(){
 
-        // unbindService(serviceConnection);
-        // isUnbound = true;
+        unbindService(serviceConnection);
         stopService(serviceIntent);
-        // serviceIntent = null;
 
     }
 
@@ -179,22 +180,23 @@ public class MainActivity extends AppCompatActivity {
 
         unregisterReceiver(broadcastReceiver);
 
+        if(serviceRunning){
+            finishService();
+            serviceRunning = false;
+        }
+
     }
 
-    // binderino
+    // bind to service
     private ServiceConnection serviceConnection = new ServiceConnection() {
         @Override
         public void onServiceConnected(ComponentName name, IBinder service) {
-            Log.d("SERVICECONNECTION", "BINDERINO");
             messenger = new Messenger(service);
-            isBound = true;
         }
 
         @Override
         public void onServiceDisconnected(ComponentName name) {
-            Log.d("SERVICECONNECTION", "UNBINDERONI");
             messenger = null;
-            isBound = false;
         }
     };
 
@@ -202,91 +204,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onStart() {
 
         super.onStart();
-
         refreshUi();
-
-        Log.d("ONSTART", "WE ARE STARTING!");
-
-        // bindService(new Intent(this, MyService.class), serviceConnection, Context.BIND_AUTO_CREATE);
-
-    }
-
-    @Override
-    protected void onStop() {
-
-        super.onStop();
-
-        /*
-        if(isBound){
-
-            unbindService(serviceConnection);
-            isBound = false;
-
-        }
-        */
-
-        // finishService();
-
-    }
-
-    public void delay(View view){
-
-        if(!isBound){
-            return;
-        }
-
-        Message message = Message.obtain(null, 69, delay, 0);
-
-        try {
-            messenger.send(message);
-            delay += 25;
-        } catch (RemoteException e) {
-            e.printStackTrace();
-        }
-
-    }
-
-    public void serviceButton(View view){
-
-        Log.d("BUTTON", "SERVICE");
-
-        if(!serviceRunning){
-
-            if(isUnbound){
-                bindService(serviceIntent, serviceConnection, BIND_AUTO_CREATE);
-                isUnbound = false;
-            }
-
-            startService(serviceIntent);
-            serviceRunning = true;
-
-        }else{
-
-            finishService();
-            serviceRunning = false;
-
-        }
-
-        /*
-        if(!serviceRunning){
-
-            serviceIntent = new Intent(this, MyService.class);
-            startService(serviceIntent);
-            serviceRunning = true;
-
-        }else{
-
-            Log.d("SERVICE", "ITS RUNNING, LETS STOP!");
-
-            // unbindService(serviceConnection);
-            // isBound = false;
-
-            stopService(serviceIntent);
-            serviceIntent = null;
-            serviceRunning = false;
-
-        }
-        */
 
     }
 

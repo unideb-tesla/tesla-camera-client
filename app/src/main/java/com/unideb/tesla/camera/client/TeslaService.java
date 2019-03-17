@@ -5,6 +5,10 @@ import android.content.Context;
 import android.content.Intent;
 import android.media.Image;
 import android.media.ImageReader;
+import android.os.Handler;
+import android.os.IBinder;
+import android.os.Message;
+import android.os.Messenger;
 import android.support.annotation.Nullable;
 import android.util.Log;
 
@@ -25,9 +29,12 @@ import java.util.List;
 
 public class TeslaService extends IntentService {
 
+    public static final int TIME_SYNCHRONIZATION_DELAY_UPDATE = 11;
+
     // service related fields
     private boolean isRunning;
     private Context context;
+    private Messenger messenger;
 
     // TESLA related fields
     private DisclosureSchedule disclosureSchedule;
@@ -105,6 +112,33 @@ public class TeslaService extends IntentService {
 
     }
 
+    private class IncomingHandler extends Handler{
+
+        @Override
+        public void handleMessage(Message msg) {
+
+            if(msg.what == TIME_SYNCHRONIZATION_DELAY_UPDATE){
+
+                long delay = msg.arg1;
+                timeDifference = delay;
+
+            }else{
+                super.handleMessage(msg);
+            }
+
+        }
+
+    }
+
+    @Nullable
+    @Override
+    public IBinder onBind(Intent intent) {
+
+        messenger = new Messenger(new IncomingHandler());
+        return messenger.getBinder();
+
+    }
+
     private void initialize(){
 
         // service is running
@@ -129,20 +163,6 @@ public class TeslaService extends IntentService {
         buffer = new ArrayList<>();
 
         // init camera
-        /*
-        cameraHandler = new CameraHandler(this, new ImageReader.OnImageAvailableListener() {
-            @Override
-            public void onImageAvailable(ImageReader reader) {
-
-                Image image = reader.acquireLatestImage();
-
-                // TODO: mess around with image
-
-                image.close();
-
-            }
-        });
-        */
         cameraHandler = new CameraHandler(this, new ClientOnImageAvailableListener());
         cameraHandler.init();
 
@@ -205,6 +225,8 @@ public class TeslaService extends IntentService {
     }
 
     private void handlePacket(Packet packet) {
+
+        Log.d("HANDLE_PACKET", Long.toString(timeDifference));
 
         // if we didn't get a disclosure schedule yet, throw away all packets
         if (disclosureSchedule == null) {
