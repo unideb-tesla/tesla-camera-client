@@ -1,10 +1,14 @@
 package com.unideb.tesla.camera.client;
 
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.Matrix;
 import android.media.Image;
 import android.media.ImageReader;
 import android.os.Environment;
 import android.util.Log;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -22,6 +26,7 @@ import retrofit2.Response;
 public class ClientOnImageAvailableListener implements ImageReader.OnImageAvailableListener {
 
     public static final String MEDIA_TYPE_IMAGE_JPEG = "image/jpeg";
+    public static final float ROTATION_90 = 90.0f;
 
     private ImageService imageService;
     private String mac;
@@ -37,10 +42,13 @@ public class ClientOnImageAvailableListener implements ImageReader.OnImageAvaila
         // acquire image
         Image image = reader.acquireLatestImage();
 
+        // rotate image
+        byte[] rotatedImage = rotateImage(image, ROTATION_90);
+
         // save temporary image
         File temporaryImage;
         try {
-            temporaryImage = saveTemporaryImage(image);
+            temporaryImage = saveTemporaryImage(rotatedImage);
         } catch (IOException e) {
             e.printStackTrace();
             image.close();
@@ -55,7 +63,33 @@ public class ClientOnImageAvailableListener implements ImageReader.OnImageAvaila
 
     }
 
-    private File saveTemporaryImage(Image image) throws IOException {
+    private byte[] rotateImage(Image image, float rotation){
+
+        // get image bytes
+        ByteBuffer buffer = image.getPlanes()[0].getBuffer();
+        byte[] bytes = new byte[buffer.remaining()];
+        buffer.get(bytes);
+
+        // decode bytes to bitmap format
+        Bitmap bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
+
+        // create rotation matrix
+        Matrix matrix = new Matrix();
+        matrix.postRotate(rotation);
+
+        // rotate bitmap
+        Bitmap rotatedBitmap = Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(), bitmap.getHeight(), matrix, true);
+
+        // get result as byte array
+        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+        rotatedBitmap.compress(Bitmap.CompressFormat.JPEG, 100, byteArrayOutputStream);
+        byte[] result = byteArrayOutputStream.toByteArray();
+
+        return result;
+
+    }
+
+    private File saveTemporaryImage(byte[] imageBytes) throws IOException {
 
         // generate random name for image
         String temporaryImageName = "tesla_" + UUID.randomUUID().toString() + ".jpg";
@@ -63,14 +97,9 @@ public class ClientOnImageAvailableListener implements ImageReader.OnImageAvaila
         // create file reference
         File file = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), temporaryImageName);
 
-        // get image bytes
-        ByteBuffer buffer = image.getPlanes()[0].getBuffer();
-        byte[] bytes = new byte[buffer.remaining()];
-        buffer.get(bytes);
-
         // save image
         FileOutputStream fileOutputStream = new FileOutputStream(file);
-        fileOutputStream.write(bytes);
+        fileOutputStream.write(imageBytes);
 
         // close streams
         fileOutputStream.close();
