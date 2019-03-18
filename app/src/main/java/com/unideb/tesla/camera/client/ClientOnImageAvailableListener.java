@@ -81,13 +81,21 @@ public class ClientOnImageAvailableListener implements ImageReader.OnImageAvaila
 
     private void putImage(final File image){
 
-        // Uri fileUri = Uri.fromFile(image);
+        // multipart data from image
         RequestBody requestFile = RequestBody.create(MediaType.parse(MEDIA_TYPE_IMAGE_JPEG), image);
-
         MultipartBody.Part body = MultipartBody.Part.createFormData("image", image.getName(), requestFile);
 
-        // TODO: replace mock data with correct data
-        Call<ResponseBody> call = imageService.upload(body, 100, 50, 50, mac);
+        // collect extra data
+        double timestamp = (double) System.currentTimeMillis();
+        double longitude = 999.999;
+        double latitude = 999.999;
+
+        if(MainActivity.CLIENT_LOCATION_LISTENER.getLocation() != null){
+            longitude = MainActivity.CLIENT_LOCATION_LISTENER.getLocation().getLongitude();
+            latitude = MainActivity.CLIENT_LOCATION_LISTENER.getLocation().getLatitude();
+        }
+
+        Call<ResponseBody> call = imageService.upload(body, timestamp, longitude, latitude, mac);
 
         call.enqueue(new Callback<ResponseBody>() {
             @Override

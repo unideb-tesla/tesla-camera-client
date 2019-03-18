@@ -7,14 +7,19 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
+import android.content.pm.PackageManager;
+import android.location.Criteria;
+import android.location.LocationManager;
 import android.net.wifi.WifiManager;
 import android.os.IBinder;
 import android.os.Message;
 import android.os.Messenger;
 import android.os.PowerManager;
 import android.os.RemoteException;
+import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.Toast;
@@ -28,8 +33,13 @@ public class MainActivity extends AppCompatActivity {
     public static final int DEFAULT_MULTICAST_PORT = 9999;
     public static final String DEFAULT_WEBAPP_ADDRESS = "http://d6109746.ngrok.io/";
 
+    public static final ClientLocationListener CLIENT_LOCATION_LISTENER = new ClientLocationListener();
+    private LocationManager locationManager;
+    private boolean isLocationUpdateRequested;
+
     private WifiManager.MulticastLock multicastLock;
     private PowerManager.WakeLock wl;
+    private boolean isWakeLockAcquired;
 
     private boolean serviceRunning = false;
     private Intent serviceIntent;
@@ -47,13 +57,13 @@ public class MainActivity extends AppCompatActivity {
         @Override
         public void onReceive(Context context, Intent intent) {
 
-            if(intent.getAction().equals(TIME_SYNCHRONIZATION_DELAY_INTENT_FILTER)){
+            if (intent.getAction().equals(TIME_SYNCHRONIZATION_DELAY_INTENT_FILTER)) {
 
                 long delay = intent.getLongExtra("time_synchronization_delay", 0);
 
                 clientSharedPreferences.saveTimeSynchronizationDelay(delay);
 
-                if(serviceRunning){
+                if (serviceRunning) {
 
                     // send message to service
                     Message message = Message.obtain(null, TeslaService.TIME_SYNCHRONIZATION_DELAY_UPDATE, (int) delay, 0);
@@ -92,7 +102,9 @@ public class MainActivity extends AppCompatActivity {
                 Manifest.permission.WRITE_EXTERNAL_STORAGE,
                 Manifest.permission.CHANGE_WIFI_MULTICAST_STATE,
                 Manifest.permission.CAMERA,
-                Manifest.permission.WAKE_LOCK
+                Manifest.permission.WAKE_LOCK,
+                Manifest.permission.ACCESS_COARSE_LOCATION,
+                Manifest.permission.ACCESS_FINE_LOCATION
         }, this);
         permissionHandler.askForPermissions();
 
@@ -101,6 +113,33 @@ public class MainActivity extends AppCompatActivity {
 
         // initialize broadcast receiver
         registerReceiver(broadcastReceiver, new IntentFilter(TIME_SYNCHRONIZATION_DELAY_INTENT_FILTER));
+
+        // initialize location manager
+        locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+
+            Toast.makeText(this, "Location permissions not provided!", Toast.LENGTH_SHORT).show();
+
+        } else if(!locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER ) && !locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)) {
+
+            Toast.makeText(this, "Location providers are not available!", Toast.LENGTH_SHORT).show();
+
+        } else {
+
+            Criteria criteria = new Criteria();
+            criteria.setAccuracy(Criteria.ACCURACY_COARSE);
+            criteria.setAltitudeRequired(false);
+            criteria.setBearingRequired(false);
+            criteria.setCostAllowed(true);
+
+            String provider = locationManager.getBestProvider(criteria, true);
+
+            locationManager.requestLocationUpdates(provider, 5000, 0, CLIENT_LOCATION_LISTENER);
+
+            isLocationUpdateRequested = true;
+
+        }
 
     }
 
@@ -146,6 +185,7 @@ public class MainActivity extends AppCompatActivity {
             PowerManager pm = (PowerManager)getApplicationContext().getSystemService(getApplicationContext().POWER_SERVICE);
             wl = pm.newWakeLock(PowerManager.FULL_WAKE_LOCK, "myapp:my_wake_lock");
             wl.acquire();
+            isWakeLockAcquired = true;
 
             // init service
             initService();
@@ -189,7 +229,17 @@ public class MainActivity extends AppCompatActivity {
 
         super.onDestroy();
 
-        wl.release();
+        if(isLocationUpdateRequested){
+            locationManager.removeUpdates(CLIENT_LOCATION_LISTENER);
+            isLocationUpdateRequested = false;
+        }
+
+        if(isWakeLockAcquired) {
+
+            wl.release();
+            isWakeLockAcquired = false;
+
+        }
 
         releaseMulticastLock();
 

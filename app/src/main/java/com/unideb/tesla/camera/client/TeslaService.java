@@ -1,14 +1,21 @@
 package com.unideb.tesla.camera.client;
 
+import android.Manifest;
+import android.annotation.SuppressLint;
 import android.app.IntentService;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.location.Location;
+import android.location.LocationListener;
+import android.location.LocationManager;
 import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
 import android.os.Messenger;
 import android.support.annotation.Nullable;
+import android.support.v4.app.ActivityCompat;
 import android.util.Log;
 
 import com.google.gson.Gson;
@@ -29,9 +36,7 @@ import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.List;
 
-import okhttp3.ResponseBody;
 import retrofit2.Call;
-import retrofit2.Response;
 import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
 import retrofit2.converter.scalars.ScalarsConverterFactory;
@@ -70,6 +75,10 @@ public class TeslaService extends IntentService {
     private Retrofit retrofit;
     private DeviceService deviceService;
     private ImageService imageService;
+
+    // GPS
+    private LocationManager locationManager;
+    private ClientLocationListener clientLocationListener;
 
     public TeslaService() {
         super("TeslaService");
@@ -113,7 +122,6 @@ public class TeslaService extends IntentService {
         // close udp socket communication
         try {
 
-            // TODO: read them from settings
             multicastSocket.leaveGroup(InetAddress.getByName(address));
             multicastSocket.close();
             multicastSocket = null;
@@ -135,17 +143,17 @@ public class TeslaService extends IntentService {
 
     }
 
-    private class IncomingHandler extends Handler{
+    private class IncomingHandler extends Handler {
 
         @Override
         public void handleMessage(Message msg) {
 
-            if(msg.what == TIME_SYNCHRONIZATION_DELAY_UPDATE){
+            if (msg.what == TIME_SYNCHRONIZATION_DELAY_UPDATE) {
 
                 long delay = msg.arg1;
                 timeDifference = delay;
 
-            }else{
+            } else {
                 super.handleMessage(msg);
             }
 
@@ -162,7 +170,7 @@ public class TeslaService extends IntentService {
 
     }
 
-    private void initialize(){
+    private void initialize() {
 
         // collect device information
         deviceInformation = collectDeviceInformation();
@@ -177,8 +185,6 @@ public class TeslaService extends IntentService {
             e.printStackTrace();
             return;
         }
-
-        // TODO: set up GPS stuff
 
         // init udp socket communication
         try {
