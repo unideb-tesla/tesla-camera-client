@@ -15,6 +15,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.unideb.tesla.camera.dto.DisclosureSchedule;
 import com.unideb.tesla.camera.dto.Packet;
+import com.unideb.tesla.camera.dto.TeslaMessage;
 
 import org.apache.commons.lang3.SerializationUtils;
 
@@ -392,8 +393,23 @@ public class TeslaService extends IntentService {
 
     private void handleValidTriplets(List<Triplet> triplets) {
 
-        // TODO: stuff
-        cameraHandler.captureImage();
+        // we only process one message
+        if(triplets.size() != 0){
+
+            TeslaMessage teslaMessage = triplets.get(0).getTeslaMessage();
+
+            if(teslaMessage.getTargetDevices().contains(deviceInformation.getMac())){
+
+                Log.d("HANDLE", "This message is for me!");
+                cameraHandler.captureImage();
+
+            }else{
+
+                Log.d("HANDLE", "Not for me!");
+
+            }
+
+        }
 
     }
 

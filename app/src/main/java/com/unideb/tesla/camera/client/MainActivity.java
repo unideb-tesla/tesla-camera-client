@@ -25,7 +25,7 @@ public class MainActivity extends AppCompatActivity {
 
     public static final String DEFAULT_MULTICAST_ADDRESS = "230.1.2.3";
     public static final int DEFAULT_MULTICAST_PORT = 9999;
-    public static final String DEFAULT_WEBAPP_ADDRESS = "http://192.168.0.109:8080/";
+    public static final String DEFAULT_WEBAPP_ADDRESS = "http://ff8c1f65.ngrok.io/";
 
     private WifiManager.MulticastLock multicastLock;
 
@@ -135,8 +135,6 @@ public class MainActivity extends AppCompatActivity {
                 return;
 
             }
-
-            // TODO: is device registered?
 
             // multicast lock
             initMulticastLock();
