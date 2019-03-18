@@ -11,6 +11,7 @@ import android.net.wifi.WifiManager;
 import android.os.IBinder;
 import android.os.Message;
 import android.os.Messenger;
+import android.os.PowerManager;
 import android.os.RemoteException;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -25,9 +26,10 @@ public class MainActivity extends AppCompatActivity {
 
     public static final String DEFAULT_MULTICAST_ADDRESS = "230.1.2.3";
     public static final int DEFAULT_MULTICAST_PORT = 9999;
-    public static final String DEFAULT_WEBAPP_ADDRESS = "http://ff8c1f65.ngrok.io/";
+    public static final String DEFAULT_WEBAPP_ADDRESS = "http://d6109746.ngrok.io/";
 
     private WifiManager.MulticastLock multicastLock;
+    private PowerManager.WakeLock wl;
 
     private boolean serviceRunning = false;
     private Intent serviceIntent;
@@ -89,7 +91,8 @@ public class MainActivity extends AppCompatActivity {
                 Manifest.permission.INTERNET,
                 Manifest.permission.WRITE_EXTERNAL_STORAGE,
                 Manifest.permission.CHANGE_WIFI_MULTICAST_STATE,
-                Manifest.permission.CAMERA
+                Manifest.permission.CAMERA,
+                Manifest.permission.WAKE_LOCK
         }, this);
         permissionHandler.askForPermissions();
 
@@ -139,6 +142,11 @@ public class MainActivity extends AppCompatActivity {
             // multicast lock
             initMulticastLock();
 
+            // wake lock
+            PowerManager pm = (PowerManager)getApplicationContext().getSystemService(getApplicationContext().POWER_SERVICE);
+            wl = pm.newWakeLock(PowerManager.FULL_WAKE_LOCK, "myapp:my_wake_lock");
+            wl.acquire();
+
             // init service
             initService();
 
@@ -180,6 +188,8 @@ public class MainActivity extends AppCompatActivity {
     protected void onDestroy() {
 
         super.onDestroy();
+
+        wl.release();
 
         releaseMulticastLock();
 
