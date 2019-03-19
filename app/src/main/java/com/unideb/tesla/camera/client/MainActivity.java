@@ -19,7 +19,9 @@ import android.os.RemoteException;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
-import android.util.Log;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
 import android.widget.Toast;
@@ -28,10 +30,6 @@ public class MainActivity extends AppCompatActivity {
 
     public static final String TESLA_CAMERA_CLIENT_MULTICAST_LOCK = "tesla_camera_client_multicast_lock";
     public static final String TIME_SYNCHRONIZATION_DELAY_INTENT_FILTER = "com.unideb.tesla.timesync.TIME_SYNCHRONIZATION_DELAY";
-
-    public static final String DEFAULT_MULTICAST_ADDRESS = "230.1.2.3";
-    public static final int DEFAULT_MULTICAST_PORT = 9999;
-    public static final String DEFAULT_WEBAPP_ADDRESS = "http://d6109746.ngrok.io/";
 
     public static final ClientLocationListener CLIENT_LOCATION_LISTENER = new ClientLocationListener();
     private LocationManager locationManager;
@@ -91,6 +89,32 @@ public class MainActivity extends AppCompatActivity {
         refreshUi();
 
         initialize();
+
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+
+        MenuInflater menuInflater = getMenuInflater();
+        menuInflater.inflate(R.menu.settings_menu, menu);
+        return true;
+
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+
+        int id = item.getItemId();
+
+        if(id == R.id.action_settings){
+
+            Intent intent = new Intent(this, SettingsActivity.class);
+            startActivity(intent);
+            return true;
+
+        }
+
+        return super.onOptionsItemSelected(item);
 
     }
 
@@ -210,9 +234,9 @@ public class MainActivity extends AppCompatActivity {
 
         serviceIntent = new Intent(this, TeslaService.class);
         serviceIntent.putExtra("time_synchronization_delay", clientSharedPreferences.getTimeSynchronizationDelay());
-        serviceIntent.putExtra("multicast_address", DEFAULT_MULTICAST_ADDRESS);
-        serviceIntent.putExtra("multicast_port", DEFAULT_MULTICAST_PORT);
-        serviceIntent.putExtra("webapp_address", DEFAULT_WEBAPP_ADDRESS);
+        serviceIntent.putExtra("multicast_address", clientSharedPreferences.getBroadcastAddress());
+        serviceIntent.putExtra("multicast_port", clientSharedPreferences.getBroadcastPort());
+        serviceIntent.putExtra("webapp_address", clientSharedPreferences.getWebappUrl());
         bindService(serviceIntent, serviceConnection, Context.BIND_AUTO_CREATE);
 
     }

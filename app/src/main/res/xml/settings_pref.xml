@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <EditTextPreference
+        android:defaultValue="http://localhost:8080/"
+        android:key="webapp_url"
+        android:summaryOff="Invisible"
+        android:summaryOn="Visible"
+        android:summary="URL of the web application to send and fetch data from."
+        android:title="WebApp URL"
+        android:persistent="true"
+        android:icon="@drawable/ic_http_grey_24dp" />
+
+    <EditTextPreference
+        android:defaultValue="localhost"
+        android:key="broadcast_address"
+        android:summaryOff="Invisible"
+        android:summaryOn="Visible"
+        android:summary="IPv4 broadcast address."
+        android:title="Broadcast address"
+        android:persistent="true"
+        android:icon="@drawable/ic_rss_feed_black_24dp" />
+
+    <EditTextPreference
+        android:defaultValue="9999"
+        android:key="broadcast_port"
+        android:summaryOff="Invisible"
+        android:summaryOn="Visible"
+        android:summary="Port of the broadcast address."
+        android:title="Port"
+        android:persistent="true"
+        android:icon="@drawable/ic_settings_black_24dp" />
+
+</PreferenceScreen>

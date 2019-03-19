@@ -3,11 +3,15 @@ package com.unideb.tesla.camera.client;
 import android.app.Activity;
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.preference.PreferenceManager;
+import android.util.Log;
 
 public class ClientSharedPreferences {
 
-    public static final String TESLA_CAMERA_CLIENT_SHARED_PREFERENCES_NAME = "tesla_camera_client_shared_preferences";
     public static final String SHARED_PREFERENCE_KEY_TIME_SYNCHRONIZATION_DELAY = "time_synchronization_delay";
+    public static final String SHARED_PREFERENCE_KEY_WEBAPP_URL = "webapp_url";
+    public static final String SHARED_PREFERENCE_KEY_BROADCAST_ADDRESS = "broadcast_address";
+    public static final String SHARED_PREFERENCE_KEY_BROADCAST_PORT = "broadcast_port";
 
     private Activity activity;
     private SharedPreferences sharedPreferences;
@@ -17,7 +21,7 @@ public class ClientSharedPreferences {
 
         this.activity = activity;
 
-        sharedPreferences = activity.getSharedPreferences(TESLA_CAMERA_CLIENT_SHARED_PREFERENCES_NAME, Context.MODE_PRIVATE);
+        sharedPreferences = PreferenceManager.getDefaultSharedPreferences(activity);
         editor = sharedPreferences.edit();
 
     }
@@ -34,6 +38,24 @@ public class ClientSharedPreferences {
 
         editor.putLong(SHARED_PREFERENCE_KEY_TIME_SYNCHRONIZATION_DELAY, delay);
         editor.commit();
+
+    }
+
+    public String getWebappUrl(){
+
+        return sharedPreferences.getString(SHARED_PREFERENCE_KEY_WEBAPP_URL, "http://localhost:8080/");
+
+    }
+
+    public String getBroadcastAddress(){
+
+        return sharedPreferences.getString(SHARED_PREFERENCE_KEY_BROADCAST_ADDRESS, "localhost");
+
+    }
+
+    public int getBroadcastPort(){
+
+        return Integer.parseInt(sharedPreferences.getString(SHARED_PREFERENCE_KEY_BROADCAST_PORT, "9999"));
 
     }
 
