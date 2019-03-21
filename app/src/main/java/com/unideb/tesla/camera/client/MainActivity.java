@@ -8,14 +8,17 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.content.pm.PackageManager;
+import android.graphics.Color;
 import android.location.Criteria;
 import android.location.LocationManager;
 import android.net.wifi.WifiManager;
+import android.os.Build;
 import android.os.IBinder;
 import android.os.Message;
 import android.os.Messenger;
 import android.os.PowerManager;
 import android.os.RemoteException;
+import android.support.constraint.ConstraintLayout;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -46,6 +49,7 @@ public class MainActivity extends AppCompatActivity {
     private Messenger messenger;
 
     // AFTER REFACTOR:
+    private ConstraintLayout constraintLayout;
     private Button serviceButton;
 
     private PermissionHandler permissionHandler;
@@ -84,6 +88,7 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        constraintLayout = findViewById(R.id.mainConstraintLayout);
         serviceButton = findViewById(R.id.serviceButton);
 
         refreshUi();
@@ -172,8 +177,20 @@ public class MainActivity extends AppCompatActivity {
         // service button
         if(!serviceRunning){
             serviceButton.setText(R.string.start_button_text);
+            serviceButton.setBackground(getApplicationContext().getDrawable(R.drawable.circle_button_background_green));
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                constraintLayout.setBackgroundColor(getApplicationContext().getColor(R.color.colorStartBackground));
+            }else{
+                constraintLayout.setBackgroundColor(Color.parseColor("#00C853"));
+            }
         }else{
             serviceButton.setText(R.string.stop_button_text);
+            serviceButton.setBackground(getApplicationContext().getDrawable(R.drawable.circle_button_background_red));
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                constraintLayout.setBackgroundColor(getApplicationContext().getColor(R.color.colorStopBackground));
+            }else{
+                constraintLayout.setBackgroundColor(Color.parseColor("#FF5252"));
+            }
         }
 
     }
