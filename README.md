@@ -16,3 +16,5 @@ After the application granted all the necessary premissions, you can configure i
 After the configuration, you have to perform loose time synchronization, so the app can communicate well with the TESLA server.
 
 After all these things, just place the phone in a good position, then start the app. When the client receives a broadcast message, it captures an image, then sends it with some extra data (like GPS coordinates) to the REST endpoint.
+
+Currently there is not any release APK file that you can install directly on your Android phone, so the best option is to connect your phone to your development PC, and then install the app with the Android Studio IDE.
